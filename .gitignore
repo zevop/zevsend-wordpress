@@ -1,0 +1,19 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Never commit secrets or local env
+.env
+*.local
+
+# Build artifacts / packaging output
+/dist/
+*.zip
+
+# Dependency trees must never ship in a WP plugin
+/vendor/
+/node_modules/
+composer.lock

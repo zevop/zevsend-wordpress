@@ -1,0 +1,71 @@
+/* ZevSend SMTP admin styles. */
+
+.zevsend-smtp-status {
+	margin: 16px 0 8px;
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.zevsend-smtp-badge {
+	display: inline-block;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	line-height: 1.8;
+}
+
+.zevsend-smtp-badge--ok {
+	background: #e6f4ea;
+	color: #137333;
+}
+
+.zevsend-smtp-badge--warn {
+	background: #fef7e0;
+	color: #b06000;
+}
+
+.zevsend-smtp-hint {
+	color: #646970;
+	font-size: 12.5px;
+	max-width: 640px;
+}
+
+.zevsend-smtp-test {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	margin-bottom: 8px;
+}
+
+.zevsend-smtp-test-result {
+	font-size: 13px;
+}
+
+.zevsend-smtp-test-result.is-ok {
+	color: #137333;
+}
+
+.zevsend-smtp-test-result.is-error {
+	color: #b32d2e;
+}
+
+.zevsend-smtp-clear {
+	margin: 4px 0 8px;
+}
+
+.zevsend-smtp-danger {
+	color: #b32d2e;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.zevsend-smtp-log {
+	max-width: 900px;
+	margin-top: 8px;
+}
