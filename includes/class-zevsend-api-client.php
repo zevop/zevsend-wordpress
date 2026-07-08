@@ -21,6 +21,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Exception carrying the ZevSend error code alongside the message, so
+ * the UI can map it to a plain-language hint (see
+ * zevsend_smtp_error_hint()).
+ */
+class ZevSend_SMTP_Api_Exception extends Exception {
+
+	/**
+	 * @var string
+	 */
+	private $error_code;
+
+	/**
+	 * @param string $message    Human message.
+	 * @param string $error_code ZevSend error code (e.g. from_domain_unverified).
+	 */
+	public function __construct( $message, $error_code = '' ) {
+		parent::__construct( $message );
+		$this->error_code = (string) $error_code;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function get_error_code() {
+		return $this->error_code;
+	}
+}
+
 class ZevSend_SMTP_Api_Client {
 
 	/**
@@ -181,8 +210,6 @@ class ZevSend_SMTP_Api_Client {
 			);
 		}
 
-		throw new Exception(
-			esc_html( sprintf( '[%s] %s', $code, $message ) )
-		);
+		throw new ZevSend_SMTP_Api_Exception( esc_html( $message ), $code );
 	}
 }

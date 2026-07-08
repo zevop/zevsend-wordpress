@@ -71,6 +71,14 @@ class ZevSend_SMTP_Mailer {
 
 		try {
 			$result = $client->send_email( $payload );
+		} catch ( ZevSend_SMTP_Api_Exception $e ) {
+			$code = $e->get_error_code();
+			return $this->fail(
+				$atts,
+				'' !== $code ? $code : 'api_error',
+				$e->getMessage(),
+				$payload
+			);
 		} catch ( Exception $e ) {
 			return $this->fail(
 				$atts,
@@ -157,12 +165,44 @@ class ZevSend_SMTP_Mailer {
 			$payload['reply_to'] = $headers['reply_to'];
 		}
 
-		// From. Sandbox keys lock the sender to ZevSend's platform
-		// address, so sending any `from` there returns an error — omit
-		// it and let ZevSend fill it in. In live mode we send a From.
-		$from = $this->resolve_from( $headers['from'] );
-		if ( 'sandbox' !== ZevSend_SMTP_Settings::mode() && '' !== $from ) {
-			$payload['from'] = $from;
+		// From address + sender name.
+		//
+		// Sandbox keys lock the sender to ZevSend's platform address, so
+		// we send no `from` at all there. In live mode we send the From
+		// address, and handle the display name ZevSend's way: it must be
+		// the domain's approved brand name or an approved alternate, or
+		// the send is rejected. So we NEVER pass through a display name
+		// set by another plugin (WooCommerce etc.) — that would fail. We
+		// send only what the admin configured here:
+		//   - a Display ID (dn_…) → the typo-proof, recommended path, OR
+		//   - an exact approved brand name in "From name", OR
+		//   - nothing → ZevSend auto-fills the approved brand name.
+		if ( 'sandbox' !== ZevSend_SMTP_Settings::mode() ) {
+			$from_email = $this->resolve_from_email( $headers['from'] );
+			if ( '' !== $from_email ) {
+				$display_id = (string) ZevSend_SMTP_Settings::get( 'from_display_id', '' );
+				$from_name  = (string) ZevSend_SMTP_Settings::get( 'from_name', '' );
+
+				/**
+				 * Filter the sender display name in live mode. Return an
+				 * empty string to let ZevSend auto-fill the approved brand
+				 * name. Whatever you return must be an approved name for
+				 * the domain or the send is rejected.
+				 *
+				 * @param string $from_name  Admin-configured name.
+				 * @param array  $atts       Original wp_mail atts.
+				 */
+				$from_name = (string) apply_filters( 'zevsend_smtp_from_display_name', $from_name, $atts );
+
+				if ( '' !== $display_id ) {
+					// Display ID wins; send a bare From address so the id
+					// alone controls the name.
+					$payload['from']            = zevsend_smtp_format_from( $from_email, '' );
+					$payload['from_display_id'] = $display_id;
+				} else {
+					$payload['from'] = zevsend_smtp_format_from( $from_email, $from_name );
+				}
+			}
 		}
 
 		// Body. wp_mail sends a single body; the Content-Type header
@@ -183,49 +223,31 @@ class ZevSend_SMTP_Mailer {
 	}
 
 	/**
-	 * Decide the effective From.
+	 * Decide the effective From ADDRESS (not the display name, which is
+	 * resolved separately against ZevSend's approved brand identity).
 	 *
 	 * Precedence:
 	 *   1. If "force from" is on, always use the configured address.
-	 *   2. Otherwise use the From the caller set in headers.
+	 *   2. Otherwise use the From the caller set in its headers.
 	 *   3. Otherwise fall back to the configured address.
 	 *
-	 * The name follows its own force toggle so an admin can pin the
-	 * address but let each plugin keep its own display name (common for
-	 * WooCommerce "Your Store" vs. "Your Store Receipts").
+	 * In live mode the returned address must be on a domain verified in
+	 * ZevSend, or the API rejects the send.
 	 *
 	 * @param array{email:string,name:string} $header_from Parsed header From.
-	 * @return string Formatted From, or '' when none is configured.
+	 * @return string Bare email, or '' when none is configured.
 	 */
-	private function resolve_from( $header_from ) {
+	private function resolve_from_email( $header_from ) {
 		$cfg_email  = (string) ZevSend_SMTP_Settings::get( 'from_email', '' );
-		$cfg_name   = (string) ZevSend_SMTP_Settings::get( 'from_name', '' );
 		$force_addr = (bool) ZevSend_SMTP_Settings::get( 'force_from', false );
-		$force_name = (bool) ZevSend_SMTP_Settings::get( 'force_from_name', false );
 
-		$email = '';
 		if ( $force_addr && '' !== $cfg_email ) {
-			$email = $cfg_email;
-		} elseif ( '' !== $header_from['email'] ) {
-			$email = $header_from['email'];
-		} elseif ( '' !== $cfg_email ) {
-			$email = $cfg_email;
+			return $cfg_email;
 		}
-
-		if ( '' === $email ) {
-			return '';
+		if ( '' !== $header_from['email'] ) {
+			return $header_from['email'];
 		}
-
-		$name = '';
-		if ( $force_name && '' !== $cfg_name ) {
-			$name = $cfg_name;
-		} elseif ( '' !== $header_from['name'] ) {
-			$name = $header_from['name'];
-		} else {
-			$name = $cfg_name;
-		}
-
-		return zevsend_smtp_format_from( $email, $name );
+		return $cfg_email;
 	}
 
 	/**
@@ -432,8 +454,12 @@ class ZevSend_SMTP_Mailer {
 
 		// Let anything listening on wp_mail_failed react (WP core would
 		// fire this on a native failure; we short-circuited, so we fire
-		// it ourselves).
-		$error = new WP_Error( 'zevsend_smtp_failed', $message, $atts );
+		// it ourselves). We keep the atts as the error data (as core
+		// does) and add our error code so the settings screen can show a
+		// plain-language hint.
+		$data = is_array( $atts ) ? $atts : array();
+		$data['zevsend_error_code'] = $code;
+		$error = new WP_Error( 'zevsend_smtp_failed', $message, $data );
 		/** This is the same action WordPress fires for native failures. */
 		do_action( 'wp_mail_failed', $error );
 

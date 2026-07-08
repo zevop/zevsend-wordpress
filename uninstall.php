@@ -12,6 +12,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 delete_option( 'zevsend_smtp_settings' );
+delete_option( 'zevsend_smtp_welcome' );
+delete_option( 'zevsend_smtp_test_passed' );
 
 // Drop the log table.
 global $wpdb;

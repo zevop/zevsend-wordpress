@@ -42,6 +42,14 @@ define( 'ZEVSEND_SMTP_BASENAME', plugin_basename( __FILE__ ) );
 // can be sourced from wp-config.php and kept out of the DB.
 define( 'ZEVSEND_SMTP_OPTION', 'zevsend_smtp_settings' );
 
+// Canonical ZevSend URLs, centralised so onboarding links stay correct
+// in one place. All public, safe to ship.
+define( 'ZEVSEND_SMTP_URL_MARKETING', 'https://zevsend.com/' );
+define( 'ZEVSEND_SMTP_URL_CONSOLE', 'https://console.zevsend.com/' );
+define( 'ZEVSEND_SMTP_URL_API_KEYS', 'https://console.zevsend.com/api-keys' );
+define( 'ZEVSEND_SMTP_URL_DOMAINS', 'https://console.zevsend.com/domains' );
+define( 'ZEVSEND_SMTP_URL_DOCS', 'https://docs.zevsend.com/' );
+
 // The wp-config.php constant a security-conscious admin can define to
 // keep the API key out of the database entirely. Documented in readme.
 // Example: define( 'ZEVSEND_SMTP_API_KEY', 'zs_live_...' );

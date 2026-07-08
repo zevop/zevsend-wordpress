@@ -32,9 +32,70 @@ class ZevSend_SMTP_Admin {
 		add_action( 'admin_menu', array( $this, 'add_menu' ) );
 		add_action( 'admin_post_zevsend_smtp_save', array( $this, 'handle_save' ) );
 		add_action( 'admin_post_zevsend_smtp_clear_key', array( $this, 'handle_clear_key' ) );
+		add_action( 'admin_post_zevsend_smtp_dismiss_welcome', array( $this, 'dismiss_welcome' ) );
 		add_action( 'wp_ajax_zevsend_smtp_test', array( $this, 'handle_test' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
+		add_action( 'admin_notices', array( $this, 'welcome_notice' ) );
 		add_filter( 'plugin_action_links_' . ZEVSEND_SMTP_BASENAME, array( $this, 'action_links' ) );
+	}
+
+	/**
+	 * Post-activation nudge, shown until the admin either finishes setup
+	 * (a valid key is configured) or dismisses it. Only to users who can
+	 * manage options, and never on our own settings screen.
+	 *
+	 * @return void
+	 */
+	public function welcome_notice() {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			return;
+		}
+		if ( ! get_option( 'zevsend_smtp_welcome', false ) ) {
+			return;
+		}
+		if ( ZevSend_SMTP_Settings::is_configured() ) {
+			return;
+		}
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen && 'settings_page_' . self::PAGE_SLUG === $screen->id ) {
+			return;
+		}
+
+		$settings_url = admin_url( 'options-general.php?page=' . self::PAGE_SLUG );
+		$dismiss_url  = wp_nonce_url(
+			admin_url( 'admin-post.php?action=zevsend_smtp_dismiss_welcome' ),
+			self::NONCE_CLEAR
+		);
+		?>
+		<div class="notice notice-info is-dismissible">
+			<p>
+				<span class="dashicons dashicons-email-alt zevsend-smtp-notice-brand"></span>
+				<strong><?php esc_html_e( 'ZevSend SMTP is active.', 'zevsend-smtp' ); ?></strong>
+				<?php esc_html_e( 'Finish the quick setup to start delivering reliable WordPress email.', 'zevsend-smtp' ); ?>
+				<a href="<?php echo esc_url( $settings_url ); ?>" class="button button-primary" style="margin-left:6px;">
+					<?php esc_html_e( 'Set up ZevSend', 'zevsend-smtp' ); ?>
+				</a>
+				<a href="<?php echo esc_url( $dismiss_url ); ?>" style="margin-left:8px;">
+					<?php esc_html_e( 'Dismiss', 'zevsend-smtp' ); ?>
+				</a>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Dismiss the welcome notice.
+	 *
+	 * @return void
+	 */
+	public function dismiss_welcome() {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			wp_die( esc_html__( 'You do not have permission to do this.', 'zevsend-smtp' ) );
+		}
+		check_admin_referer( self::NONCE_CLEAR );
+		delete_option( 'zevsend_smtp_welcome' );
+		wp_safe_redirect( wp_get_referer() ? wp_get_referer() : admin_url() );
+		exit;
 	}
 
 	/**
@@ -115,8 +176,8 @@ class ZevSend_SMTP_Admin {
 		$values = array(
 			'from_email'      => isset( $_POST['from_email'] ) ? sanitize_email( wp_unslash( $_POST['from_email'] ) ) : '',
 			'from_name'       => isset( $_POST['from_name'] ) ? sanitize_text_field( wp_unslash( $_POST['from_name'] ) ) : '',
+			'from_display_id' => isset( $_POST['from_display_id'] ) ? sanitize_text_field( wp_unslash( $_POST['from_display_id'] ) ) : '',
 			'force_from'      => isset( $_POST['force_from'] ),
-			'force_from_name' => isset( $_POST['force_from_name'] ),
 			'fallback_native' => isset( $_POST['fallback_native'] ),
 			'logging_enabled' => isset( $_POST['logging_enabled'] ),
 			'log_retention'   => isset( $_POST['log_retention'] ) ? absint( wp_unslash( $_POST['log_retention'] ) ) : 30,
@@ -195,11 +256,18 @@ class ZevSend_SMTP_Admin {
 		$body    = '<p>' . esc_html__( 'Success. This test email was delivered through ZevSend.', 'zevsend-smtp' ) . '</p>';
 		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 
-		// Capture the failure message our mailer emits via wp_mail_failed.
+		// Capture the failure message + error code our mailer emits via
+		// wp_mail_failed, so we can add a plain-language hint.
 		$captured = '';
-		$listener = static function ( $wp_error ) use ( &$captured ) {
+		$hint     = '';
+		$listener = static function ( $wp_error ) use ( &$captured, &$hint ) {
 			if ( is_wp_error( $wp_error ) ) {
 				$captured = $wp_error->get_error_message();
+				$data     = $wp_error->get_error_data();
+				$code     = is_array( $data ) && isset( $data['zevsend_error_code'] )
+					? (string) $data['zevsend_error_code']
+					: '';
+				$hint = zevsend_smtp_error_hint( $code );
 			}
 		};
 		add_action( 'wp_mail_failed', $listener );
@@ -207,6 +275,8 @@ class ZevSend_SMTP_Admin {
 		remove_action( 'wp_mail_failed', $listener );
 
 		if ( $ok ) {
+			// Mark the onboarding checklist step complete.
+			update_option( 'zevsend_smtp_test_passed', true, false );
 			wp_send_json_success(
 				array(
 					'message' => sprintf(
@@ -218,13 +288,13 @@ class ZevSend_SMTP_Admin {
 			);
 		}
 
-		wp_send_json_error(
-			array(
-				'message' => '' !== $captured
-					? $captured
-					: __( 'The test email could not be sent.', 'zevsend-smtp' ),
-			)
-		);
+		$message = '' !== $captured
+			? $captured
+			: __( 'The test email could not be sent.', 'zevsend-smtp' );
+		if ( '' !== $hint ) {
+			$message .= ' ' . $hint;
+		}
+		wp_send_json_error( array( 'message' => $message ) );
 	}
 
 	/**
@@ -249,12 +319,19 @@ class ZevSend_SMTP_Admin {
 		$updated     = isset( $_GET['updated'] );
 		$key_cleared = isset( $_GET['key_cleared'] );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		$account_done = $configured;
+		$from_done    = ( '' !== $s['from_email'] ) || 'sandbox' === $mode;
+		$test_done    = (bool) get_option( 'zevsend_smtp_test_passed', false );
+		$setup_done   = $account_done && $from_done && $test_done;
 		?>
 		<div class="wrap zevsend-smtp">
-			<h1><?php esc_html_e( 'ZevSend SMTP', 'zevsend-smtp' ); ?></h1>
-			<p class="description">
-				<?php esc_html_e( 'Deliver all WordPress email through ZevSend. Works with WooCommerce, contact forms, and anything that uses wp_mail().', 'zevsend-smtp' ); ?>
-			</p>
+			<div class="zevsend-smtp-header">
+				<?php echo zevsend_smtp_logo_svg( 30 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG from a plugin constant, no dynamic data. ?>
+				<h1 class="zevsend-smtp-title">
+					<?php esc_html_e( 'ZevSend SMTP', 'zevsend-smtp' ); ?>
+					<small><?php esc_html_e( 'Reliable email delivery for WordPress, powered by ZevSend.', 'zevsend-smtp' ); ?></small>
+				</h1>
+			</div>
 
 			<?php if ( $updated ) : ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'zevsend-smtp' ); ?></p></div>
@@ -282,6 +359,65 @@ class ZevSend_SMTP_Admin {
 					</span>
 				<?php endif; ?>
 			</div>
+
+			<div class="zevsend-smtp-checklist">
+				<span class="zevsend-smtp-check <?php echo $account_done ? 'is-done' : ''; ?>">
+					<span class="dashicons <?php echo $account_done ? 'dashicons-yes-alt' : 'dashicons-marker'; ?>"></span>
+					<?php esc_html_e( 'API key connected', 'zevsend-smtp' ); ?>
+				</span>
+				<span class="zevsend-smtp-check <?php echo $from_done ? 'is-done' : ''; ?>">
+					<span class="dashicons <?php echo $from_done ? 'dashicons-yes-alt' : 'dashicons-marker'; ?>"></span>
+					<?php esc_html_e( 'From address set', 'zevsend-smtp' ); ?>
+				</span>
+				<span class="zevsend-smtp-check <?php echo $test_done ? 'is-done' : ''; ?>">
+					<span class="dashicons <?php echo $test_done ? 'dashicons-yes-alt' : 'dashicons-marker'; ?>"></span>
+					<?php esc_html_e( 'Test email delivered', 'zevsend-smtp' ); ?>
+				</span>
+			</div>
+
+			<?php if ( ! $setup_done ) : ?>
+				<div class="zevsend-smtp-onboard">
+					<h2><?php esc_html_e( 'Getting started', 'zevsend-smtp' ); ?></h2>
+					<p class="zevsend-smtp-onboard-sub">
+						<?php esc_html_e( 'Five quick steps to reliable WordPress email. You can send in sandbox mode right away, then switch to live once your domain is verified.', 'zevsend-smtp' ); ?>
+					</p>
+					<ol class="zevsend-smtp-steps">
+						<li class="<?php echo $account_done ? 'is-done' : ''; ?>">
+							<?php
+							printf(
+								/* translators: %s: link to create a ZevSend account. */
+								esc_html__( '%s (free). Skip if you already have one.', 'zevsend-smtp' ),
+								'<a href="' . esc_url( ZEVSEND_SMTP_URL_MARKETING ) . '" target="_blank" rel="noopener">' . esc_html__( 'Create your ZevSend account', 'zevsend-smtp' ) . '</a>'
+							);
+							?>
+						</li>
+						<li>
+							<?php
+							printf(
+								/* translators: %s: link to the Domains page. */
+								esc_html__( '%s so you can send from your own address. Not needed for sandbox testing.', 'zevsend-smtp' ),
+								'<a href="' . esc_url( ZEVSEND_SMTP_URL_DOMAINS ) . '" target="_blank" rel="noopener">' . esc_html__( 'Verify your sending domain', 'zevsend-smtp' ) . '</a>'
+							);
+							?>
+						</li>
+						<li class="<?php echo $account_done ? 'is-done' : ''; ?>">
+							<?php
+							printf(
+								/* translators: %s: link to the API keys page. */
+								esc_html__( '%s and paste it in the Connection section below. Use an sk_test_ key to start.', 'zevsend-smtp' ),
+								'<a href="' . esc_url( ZEVSEND_SMTP_URL_API_KEYS ) . '" target="_blank" rel="noopener">' . esc_html__( 'Create an API key', 'zevsend-smtp' ) . '</a>'
+							);
+							?>
+						</li>
+						<li class="<?php echo $from_done ? 'is-done' : ''; ?>">
+							<?php esc_html_e( 'Set your From email (on your verified domain) in the Sender section.', 'zevsend-smtp' ); ?>
+						</li>
+						<li class="<?php echo $test_done ? 'is-done' : ''; ?>">
+							<?php esc_html_e( 'Send a test email to confirm everything works.', 'zevsend-smtp' ); ?>
+						</li>
+					</ol>
+				</div>
+			<?php endif; ?>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="zevsend_smtp_save" />
@@ -323,7 +459,10 @@ class ZevSend_SMTP_Admin {
 					</tr>
 				</table>
 
-				<h2 class="title"><?php esc_html_e( 'From address', 'zevsend-smtp' ); ?></h2>
+				<h2 class="title"><?php esc_html_e( 'Sender', 'zevsend-smtp' ); ?></h2>
+				<p class="description zevsend-smtp-section-note">
+					<?php esc_html_e( 'ZevSend protects your sender identity. In live mode the From address must be on a domain you have verified, and the sender name must match your approved brand name (or an approved alternate). Names set by other plugins are ignored to keep sends from being rejected.', 'zevsend-smtp' ); ?>
+				</p>
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="zevsend_from_email"><?php esc_html_e( 'From email', 'zevsend-smtp' ); ?></label></th>
@@ -331,29 +470,40 @@ class ZevSend_SMTP_Admin {
 							<input type="email" name="from_email" id="zevsend_from_email" class="regular-text"
 								value="<?php echo esc_attr( $s['from_email'] ); ?>" placeholder="hello@yourdomain.com" />
 							<p class="description">
-								<?php esc_html_e( 'In live mode this must be an address on a domain you have verified in ZevSend.', 'zevsend-smtp' ); ?>
+								<?php esc_html_e( 'Required in live mode. Must be an address on a domain you have verified in ZevSend.', 'zevsend-smtp' ); ?>
 							</p>
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="zevsend_from_name"><?php esc_html_e( 'From name', 'zevsend-smtp' ); ?></label></th>
-						<td>
-							<input type="text" name="from_name" id="zevsend_from_name" class="regular-text"
-								value="<?php echo esc_attr( $s['from_name'] ); ?>" placeholder="Your Store" />
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Force from', 'zevsend-smtp' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Force from address', 'zevsend-smtp' ); ?></th>
 						<td>
 							<label>
 								<input type="checkbox" name="force_from" value="1" <?php checked( $s['force_from'] ); ?> />
-								<?php esc_html_e( 'Always use the From email above, overriding other plugins.', 'zevsend-smtp' ); ?>
+								<?php esc_html_e( 'Always use the From email above, overriding the address other plugins set.', 'zevsend-smtp' ); ?>
 							</label>
-							<br />
-							<label>
-								<input type="checkbox" name="force_from_name" value="1" <?php checked( $s['force_from_name'] ); ?> />
-								<?php esc_html_e( 'Always use the From name above.', 'zevsend-smtp' ); ?>
-							</label>
+							<p class="description">
+								<?php esc_html_e( 'Recommended. Ensures every email is sent from your verified ZevSend domain.', 'zevsend-smtp' ); ?>
+							</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="zevsend_from_name"><?php esc_html_e( 'Sender name', 'zevsend-smtp' ); ?></label></th>
+						<td>
+							<input type="text" name="from_name" id="zevsend_from_name" class="regular-text"
+								value="<?php echo esc_attr( $s['from_name'] ); ?>" placeholder="<?php esc_attr_e( 'Your approved brand name', 'zevsend-smtp' ); ?>" />
+							<p class="description">
+								<?php esc_html_e( 'Leave blank to use your approved brand name automatically (recommended). If you enter a name it must exactly match your approved brand name or an approved alternate in ZevSend, or sends will be rejected.', 'zevsend-smtp' ); ?>
+							</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="zevsend_from_display_id"><?php esc_html_e( 'Display ID', 'zevsend-smtp' ); ?></label></th>
+						<td>
+							<input type="text" name="from_display_id" id="zevsend_from_display_id" class="regular-text"
+								value="<?php echo esc_attr( $s['from_display_id'] ); ?>" placeholder="dn_…" />
+							<p class="description">
+								<?php esc_html_e( 'Optional, advanced. The ID of an approved alternate sender name from your ZevSend dashboard. Typo-proof and recommended for production. When set, it overrides the sender name above.', 'zevsend-smtp' ); ?>
+							</p>
 						</td>
 					</tr>
 				</table>
@@ -415,6 +565,12 @@ class ZevSend_SMTP_Admin {
 			</div>
 
 			<?php $this->render_log( $s ); ?>
+
+			<div class="zevsend-smtp-footer">
+				<a href="<?php echo esc_url( ZEVSEND_SMTP_URL_CONSOLE ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'ZevSend dashboard', 'zevsend-smtp' ); ?></a>
+				<a href="<?php echo esc_url( ZEVSEND_SMTP_URL_DOCS ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Documentation', 'zevsend-smtp' ); ?></a>
+				<a href="<?php echo esc_url( ZEVSEND_SMTP_URL_MARKETING ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'About ZevSend', 'zevsend-smtp' ); ?></a>
+			</div>
 		</div>
 		<?php
 	}

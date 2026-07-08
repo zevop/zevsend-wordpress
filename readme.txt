@@ -2,7 +2,7 @@
 Contributors: arowolodaniel
 Tags: smtp, email, transactional email, deliverability, woocommerce
 Requires at least: 5.7
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.0.0
 License: GPLv2 or later
@@ -22,6 +22,7 @@ ZevSend is API based, so there is no SMTP host or port to configure. You paste o
 
 * One-key setup. No host, port, or encryption settings.
 * Universal compatibility through the wp_mail() hook, including WooCommerce.
+* Sender identity that respects your approved ZevSend brand name.
 * Optional From address forcing so every email uses a consistent sender.
 * Attachments supported (up to the ZevSend per-message limits).
 * Built-in test email button to confirm delivery.
@@ -69,6 +70,14 @@ Yes. WooCommerce sends its emails through wp_mail(), which this plugin intercept
 = Where do I get an API key? =
 
 Create an account at https://zevsend.com, then open Settings, API keys in your dashboard. Use an sk_test_ key to trial delivery in sandbox mode and an sk_live_ key for production.
+
+= Why is my sender name not what I set in another plugin? =
+
+ZevSend protects your sender identity. In live mode the sender name must match the approved brand name on your verified domain, so the plugin does not pass through names set by other plugins, which would cause sends to be rejected. Leave the Sender name field blank to use your approved brand name automatically, enter your exact approved brand name, or set a Display ID for an approved alternate. You register and get approval for brand names and alternates in your ZevSend dashboard.
+
+= My live emails are rejected. What should I check? =
+
+Two things. First, the From email must be on a domain you have verified in ZevSend. Second, if you set a Sender name it must be an approved brand name or alternate for that domain. When in doubt, leave the Sender name blank and turn on "Force from address" so every email uses your verified domain and approved brand.
 
 = Is my API key safe? =
 

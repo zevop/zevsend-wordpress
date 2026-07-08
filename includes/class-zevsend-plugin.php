@@ -69,10 +69,12 @@ final class ZevSend_SMTP_Plugin {
 			add_option(
 				ZEVSEND_SMTP_OPTION,
 				array(
+					// Blank by default so ZevSend auto-fills the approved
+					// brand name; a mismatched guess would fail live sends.
 					'from_email'      => '',
-					'from_name'       => get_bloginfo( 'name' ),
+					'from_name'       => '',
+					'from_display_id' => '',
 					'force_from'      => false,
-					'force_from_name' => false,
 					'fallback_native' => false,
 					'logging_enabled' => false,
 					'log_retention'   => 30,
@@ -82,6 +84,9 @@ final class ZevSend_SMTP_Plugin {
 				false
 			);
 		}
+
+		// Show the one-time welcome nudge on the next admin page load.
+		add_option( 'zevsend_smtp_welcome', true, '', false );
 
 		ZevSend_SMTP_Logger::schedule_cron();
 	}

@@ -1,5 +1,44 @@
-/* ZevSend SMTP admin styles. */
+/* ZevSend SMTP admin styles. Brand: violet #7c3aed (matches the
+   ZevSend dashboard --color-primary). */
 
+.zevsend-smtp {
+	--zs-primary: #7c3aed;
+	--zs-primary-hover: #6d28d9;
+	--zs-primary-light: #f5f3ff;
+	--zs-border: #e2e2e6;
+	--zs-muted: #646970;
+}
+
+/* Header with the ZEV mark. */
+.zevsend-smtp-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 10px 0 4px;
+}
+
+.zevsend-smtp-mark {
+	color: var(--zs-primary);
+	display: block;
+	flex: none;
+}
+
+.zevsend-smtp-title {
+	margin: 0;
+	font-size: 20px;
+	line-height: 1.2;
+	font-weight: 600;
+}
+
+.zevsend-smtp-title small {
+	display: block;
+	font-size: 12.5px;
+	font-weight: 400;
+	color: var(--zs-muted);
+	margin-top: 2px;
+}
+
+/* Status row. */
 .zevsend-smtp-status {
 	margin: 16px 0 8px;
 	display: flex;
@@ -30,11 +69,107 @@
 }
 
 .zevsend-smtp-hint {
-	color: #646970;
+	color: var(--zs-muted);
 	font-size: 12.5px;
 	max-width: 640px;
 }
 
+/* Getting-started card. */
+.zevsend-smtp-onboard {
+	max-width: 720px;
+	border: 1px solid var(--zs-border);
+	border-left: 3px solid var(--zs-primary);
+	background: #fff;
+	border-radius: 8px;
+	padding: 18px 20px;
+	margin: 16px 0 8px;
+}
+
+.zevsend-smtp-onboard h2 {
+	margin: 0 0 4px;
+	font-size: 15px;
+}
+
+.zevsend-smtp-onboard p.zevsend-smtp-onboard-sub {
+	margin: 0 0 14px;
+	color: var(--zs-muted);
+	font-size: 12.5px;
+}
+
+.zevsend-smtp-steps {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	counter-reset: zs-step;
+}
+
+.zevsend-smtp-steps li {
+	position: relative;
+	padding: 8px 0 8px 40px;
+	border-top: 1px solid #f0f0f2;
+	font-size: 13px;
+}
+
+.zevsend-smtp-steps li:first-child {
+	border-top: none;
+}
+
+.zevsend-smtp-steps li::before {
+	counter-increment: zs-step;
+	content: counter(zs-step);
+	position: absolute;
+	left: 0;
+	top: 8px;
+	width: 24px;
+	height: 24px;
+	border-radius: 999px;
+	background: var(--zs-primary-light);
+	color: var(--zs-primary);
+	font-weight: 700;
+	font-size: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.zevsend-smtp-steps li.is-done::before {
+	content: '\2713';
+	background: #e6f4ea;
+	color: #137333;
+}
+
+.zevsend-smtp-steps a {
+	color: var(--zs-primary);
+	font-weight: 500;
+}
+
+/* Setup checklist chips. */
+.zevsend-smtp-checklist {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 8px 0;
+}
+
+.zevsend-smtp-check {
+	font-size: 12px;
+	color: var(--zs-muted);
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.zevsend-smtp-check.is-done {
+	color: #137333;
+}
+
+.zevsend-smtp-check .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+/* Test + log. */
 .zevsend-smtp-test {
 	display: flex;
 	align-items: center;
@@ -45,6 +180,7 @@
 
 .zevsend-smtp-test-result {
 	font-size: 13px;
+	max-width: 560px;
 }
 
 .zevsend-smtp-test-result.is-ok {
@@ -68,4 +204,35 @@
 .zevsend-smtp-log {
 	max-width: 900px;
 	margin-top: 8px;
+}
+
+.zevsend-smtp-section-note {
+	max-width: 640px;
+	color: var(--zs-muted);
+	font-size: 12.5px;
+}
+
+.zevsend-smtp-footer {
+	margin-top: 24px;
+	padding-top: 12px;
+	border-top: 1px solid var(--zs-border);
+	font-size: 12.5px;
+	color: var(--zs-muted);
+}
+
+.zevsend-smtp-footer a {
+	color: var(--zs-primary);
+	margin-right: 14px;
+	text-decoration: none;
+}
+
+.zevsend-smtp-footer a:hover {
+	text-decoration: underline;
+}
+
+/* Brandable admin notice mark. */
+.zevsend-smtp-notice-brand {
+	color: #7c3aed;
+	vertical-align: middle;
+	margin-right: 6px;
 }

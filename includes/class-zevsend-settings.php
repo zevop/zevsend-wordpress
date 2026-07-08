@@ -30,9 +30,9 @@ class ZevSend_SMTP_Settings {
 	 */
 	private static $defaults = array(
 		'from_email'       => '',
-		'from_name'        => '',
-		'force_from'       => false, // Override the From other plugins set.
-		'force_from_name'  => false,
+		'from_name'        => '', // Must match an approved brand name in live mode; blank = auto.
+		'from_display_id'  => '', // Optional dn_… for an approved alternate sender name.
+		'force_from'       => false, // Override the From address other plugins set.
 		'fallback_native'  => false, // On API failure, let WP try its own mailer.
 		'logging_enabled'  => false,
 		'log_retention'    => 30,    // Days. 0 = keep forever.
@@ -87,8 +87,13 @@ class ZevSend_SMTP_Settings {
 
 		$clean['from_email']      = isset( $values['from_email'] ) ? sanitize_email( $values['from_email'] ) : $current['from_email'];
 		$clean['from_name']       = isset( $values['from_name'] ) ? sanitize_text_field( zevsend_smtp_strip_header_breaks( $values['from_name'] ) ) : $current['from_name'];
+
+		// Display id must look like `dn_…`; anything else is stored blank
+		// so a typo can't be sent to the API.
+		$display_id = isset( $values['from_display_id'] ) ? trim( sanitize_text_field( $values['from_display_id'] ) ) : $current['from_display_id'];
+		$clean['from_display_id'] = preg_match( '/^dn_[A-Za-z0-9]+$/', (string) $display_id ) ? $display_id : '';
+
 		$clean['force_from']      = ! empty( $values['force_from'] );
-		$clean['force_from_name'] = ! empty( $values['force_from_name'] );
 		$clean['fallback_native'] = ! empty( $values['fallback_native'] );
 		$clean['logging_enabled'] = ! empty( $values['logging_enabled'] );
 
