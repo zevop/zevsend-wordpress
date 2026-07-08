@@ -76,52 +76,101 @@
 
 /* Getting-started card. */
 .zevsend-smtp-onboard {
-	max-width: 720px;
+	max-width: 760px;
 	border: 1px solid var(--zs-border);
-	border-left: 3px solid var(--zs-primary);
 	background: #fff;
-	border-radius: 8px;
+	border-radius: 10px;
+	box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+	overflow: hidden;
+	margin: 18px 0 10px;
+}
+
+.zevsend-smtp-onboard-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
 	padding: 18px 20px;
-	margin: 16px 0 8px;
+	background: linear-gradient(180deg, var(--zs-primary-light) 0%, #fff 100%);
+	border-bottom: 1px solid #f0f0f2;
 }
 
-.zevsend-smtp-onboard h2 {
-	margin: 0 0 4px;
+.zevsend-smtp-onboard-heading {
+	display: flex;
+	align-items: flex-start;
+	gap: 11px;
+}
+
+.zevsend-smtp-onboard-mark {
+	color: var(--zs-primary);
+	display: flex;
+	margin-top: 1px;
+}
+
+.zevsend-smtp-onboard-heading h2 {
+	margin: 0;
 	font-size: 15px;
+	line-height: 1.3;
 }
 
-.zevsend-smtp-onboard p.zevsend-smtp-onboard-sub {
-	margin: 0 0 14px;
+.zevsend-smtp-onboard-heading p {
+	margin: 2px 0 0;
 	color: var(--zs-muted);
 	font-size: 12.5px;
+	max-width: 420px;
 }
 
+/* Progress. */
+.zevsend-smtp-progress {
+	min-width: 130px;
+}
+
+.zevsend-smtp-progress-track {
+	height: 6px;
+	border-radius: 999px;
+	background: #ece9fb;
+	overflow: hidden;
+}
+
+.zevsend-smtp-progress-fill {
+	height: 100%;
+	border-radius: 999px;
+	background: var(--zs-primary);
+	transition: width 0.3s ease;
+}
+
+.zevsend-smtp-progress-label {
+	display: block;
+	margin-top: 5px;
+	font-size: 11.5px;
+	color: var(--zs-muted);
+	text-align: right;
+}
+
+/* Steps. */
 .zevsend-smtp-steps {
 	margin: 0;
 	padding: 0;
 	list-style: none;
-	counter-reset: zs-step;
 }
 
-.zevsend-smtp-steps li {
-	position: relative;
-	padding: 8px 0 8px 40px;
-	border-top: 1px solid #f0f0f2;
-	font-size: 13px;
+.zevsend-smtp-step {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 13px 20px;
+	border-top: 1px solid #f4f4f6;
 }
 
-.zevsend-smtp-steps li:first-child {
+.zevsend-smtp-step:first-child {
 	border-top: none;
 }
 
-.zevsend-smtp-steps li::before {
-	counter-increment: zs-step;
-	content: counter(zs-step);
-	position: absolute;
-	left: 0;
-	top: 8px;
-	width: 24px;
-	height: 24px;
+.zevsend-smtp-step-icon {
+	flex: none;
+	width: 26px;
+	height: 26px;
 	border-radius: 999px;
 	background: var(--zs-primary-light);
 	color: var(--zs-primary);
@@ -132,41 +181,65 @@
 	justify-content: center;
 }
 
-.zevsend-smtp-steps li.is-done::before {
-	content: '\2713';
+.zevsend-smtp-step.is-done .zevsend-smtp-step-icon {
 	background: #e6f4ea;
 	color: #137333;
 }
 
-.zevsend-smtp-steps a {
-	color: var(--zs-primary);
+.zevsend-smtp-step.is-done .zevsend-smtp-step-icon .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+}
+
+.zevsend-smtp-step-body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.zevsend-smtp-step-title {
+	display: block;
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.zevsend-smtp-step.is-done .zevsend-smtp-step-title {
+	color: var(--zs-muted);
 	font-weight: 500;
 }
 
-/* Setup checklist chips. */
-.zevsend-smtp-checklist {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	margin: 8px 0;
-}
-
-.zevsend-smtp-check {
+.zevsend-smtp-step-desc {
+	display: block;
 	font-size: 12px;
 	color: var(--zs-muted);
-	display: inline-flex;
+	margin-top: 1px;
+}
+
+.zevsend-smtp-step-action {
+	flex: none;
+}
+
+/* All-set banner. */
+.zevsend-smtp-allset {
+	max-width: 760px;
+	display: flex;
 	align-items: center;
-	gap: 5px;
+	gap: 10px;
+	padding: 12px 16px;
+	margin: 16px 0 8px;
+	border: 1px solid #cde9d6;
+	background: #f0faf3;
+	border-radius: 8px;
+	font-size: 13px;
+	color: #1d2327;
 }
 
-.zevsend-smtp-check.is-done {
+.zevsend-smtp-allset .dashicons {
 	color: #137333;
-}
-
-.zevsend-smtp-check .dashicons {
-	font-size: 16px;
-	width: 16px;
-	height: 16px;
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
 }
 
 /* Test + log. */

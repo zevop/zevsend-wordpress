@@ -360,61 +360,118 @@ class ZevSend_SMTP_Admin {
 				<?php endif; ?>
 			</div>
 
-			<div class="zevsend-smtp-checklist">
-				<span class="zevsend-smtp-check <?php echo $account_done ? 'is-done' : ''; ?>">
-					<span class="dashicons <?php echo $account_done ? 'dashicons-yes-alt' : 'dashicons-marker'; ?>"></span>
-					<?php esc_html_e( 'API key connected', 'zevsend-smtp' ); ?>
-				</span>
-				<span class="zevsend-smtp-check <?php echo $from_done ? 'is-done' : ''; ?>">
-					<span class="dashicons <?php echo $from_done ? 'dashicons-yes-alt' : 'dashicons-marker'; ?>"></span>
-					<?php esc_html_e( 'From address set', 'zevsend-smtp' ); ?>
-				</span>
-				<span class="zevsend-smtp-check <?php echo $test_done ? 'is-done' : ''; ?>">
-					<span class="dashicons <?php echo $test_done ? 'dashicons-yes-alt' : 'dashicons-marker'; ?>"></span>
-					<?php esc_html_e( 'Test email delivered', 'zevsend-smtp' ); ?>
-				</span>
-			</div>
-
-			<?php if ( ! $setup_done ) : ?>
+			<?php
+			$done_count = (int) $account_done + (int) $from_done + (int) $test_done;
+			if ( $setup_done ) :
+				?>
+				<div class="zevsend-smtp-allset">
+					<span class="dashicons dashicons-yes-alt"></span>
+					<span>
+						<strong><?php esc_html_e( 'You are all set.', 'zevsend-smtp' ); ?></strong>
+						<?php esc_html_e( 'WordPress email is being delivered through ZevSend.', 'zevsend-smtp' ); ?>
+					</span>
+				</div>
+			<?php else : ?>
 				<div class="zevsend-smtp-onboard">
-					<h2><?php esc_html_e( 'Getting started', 'zevsend-smtp' ); ?></h2>
-					<p class="zevsend-smtp-onboard-sub">
-						<?php esc_html_e( 'Five quick steps to reliable WordPress email. You can send in sandbox mode right away, then switch to live once your domain is verified.', 'zevsend-smtp' ); ?>
-					</p>
+					<div class="zevsend-smtp-onboard-head">
+						<div class="zevsend-smtp-onboard-heading">
+							<span class="zevsend-smtp-onboard-mark"><?php echo zevsend_smtp_logo_svg( 20 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?></span>
+							<div>
+								<h2><?php esc_html_e( 'Set up ZevSend', 'zevsend-smtp' ); ?></h2>
+								<p><?php esc_html_e( 'A few steps to reliable WordPress email. Start in sandbox, go live once your domain is verified.', 'zevsend-smtp' ); ?></p>
+							</div>
+						</div>
+						<div class="zevsend-smtp-progress" aria-hidden="true">
+							<div class="zevsend-smtp-progress-track">
+								<div class="zevsend-smtp-progress-fill" style="width: <?php echo esc_attr( (string) round( ( $done_count / 3 ) * 100 ) ); ?>%;"></div>
+							</div>
+							<span class="zevsend-smtp-progress-label">
+								<?php
+								printf(
+									/* translators: 1: completed count, 2: total. */
+									esc_html__( '%1$d of %2$d done', 'zevsend-smtp' ),
+									(int) $done_count,
+									3
+								);
+								?>
+							</span>
+						</div>
+					</div>
+
 					<ol class="zevsend-smtp-steps">
-						<li class="<?php echo $account_done ? 'is-done' : ''; ?>">
-							<?php
-							printf(
-								/* translators: %s: link to create a ZevSend account. */
-								esc_html__( '%s (free). Skip if you already have one.', 'zevsend-smtp' ),
-								'<a href="' . esc_url( ZEVSEND_SMTP_URL_MARKETING ) . '" target="_blank" rel="noopener">' . esc_html__( 'Create your ZevSend account', 'zevsend-smtp' ) . '</a>'
-							);
+						<?php
+						$steps = array(
+							array(
+								'done'   => $account_done,
+								'num'    => 1,
+								'title'  => __( 'Create your ZevSend account', 'zevsend-smtp' ),
+								'desc'   => __( 'Free to start. Skip this if you already have one.', 'zevsend-smtp' ),
+								'action' => __( 'Create account', 'zevsend-smtp' ),
+								'url'    => ZEVSEND_SMTP_URL_MARKETING,
+								'blank'  => true,
+							),
+							array(
+								'done'   => false,
+								'num'    => 2,
+								'title'  => __( 'Verify your sending domain', 'zevsend-smtp' ),
+								'desc'   => __( 'Lets you send from your own address. Not needed for sandbox testing.', 'zevsend-smtp' ),
+								'action' => __( 'Verify domain', 'zevsend-smtp' ),
+								'url'    => ZEVSEND_SMTP_URL_DOMAINS,
+								'blank'  => true,
+							),
+							array(
+								'done'   => $account_done,
+								'num'    => 3,
+								'title'  => __( 'Create an API key', 'zevsend-smtp' ),
+								'desc'   => __( 'Paste it in the Connection section below. An sk_test_ key is fine to start.', 'zevsend-smtp' ),
+								'action' => __( 'Get API key', 'zevsend-smtp' ),
+								'url'    => ZEVSEND_SMTP_URL_API_KEYS,
+								'blank'  => true,
+							),
+							array(
+								'done'   => $from_done,
+								'num'    => 4,
+								'title'  => __( 'Set your From address', 'zevsend-smtp' ),
+								'desc'   => __( 'Use an address on your verified domain, in the Sender section below.', 'zevsend-smtp' ),
+								'action' => __( 'Set From', 'zevsend-smtp' ),
+								'url'    => '#zevsend_from_email',
+								'blank'  => false,
+							),
+							array(
+								'done'   => $test_done,
+								'num'    => 5,
+								'title'  => __( 'Send a test email', 'zevsend-smtp' ),
+								'desc'   => __( 'Confirm delivery end to end before you rely on it.', 'zevsend-smtp' ),
+								'action' => __( 'Send test', 'zevsend-smtp' ),
+								'url'    => '#zevsend_test_to',
+								'blank'  => false,
+							),
+						);
+						foreach ( $steps as $step ) :
 							?>
-						</li>
-						<li>
-							<?php
-							printf(
-								/* translators: %s: link to the Domains page. */
-								esc_html__( '%s so you can send from your own address. Not needed for sandbox testing.', 'zevsend-smtp' ),
-								'<a href="' . esc_url( ZEVSEND_SMTP_URL_DOMAINS ) . '" target="_blank" rel="noopener">' . esc_html__( 'Verify your sending domain', 'zevsend-smtp' ) . '</a>'
-							);
-							?>
-						</li>
-						<li class="<?php echo $account_done ? 'is-done' : ''; ?>">
-							<?php
-							printf(
-								/* translators: %s: link to the API keys page. */
-								esc_html__( '%s and paste it in the Connection section below. Use an sk_test_ key to start.', 'zevsend-smtp' ),
-								'<a href="' . esc_url( ZEVSEND_SMTP_URL_API_KEYS ) . '" target="_blank" rel="noopener">' . esc_html__( 'Create an API key', 'zevsend-smtp' ) . '</a>'
-							);
-							?>
-						</li>
-						<li class="<?php echo $from_done ? 'is-done' : ''; ?>">
-							<?php esc_html_e( 'Set your From email (on your verified domain) in the Sender section.', 'zevsend-smtp' ); ?>
-						</li>
-						<li class="<?php echo $test_done ? 'is-done' : ''; ?>">
-							<?php esc_html_e( 'Send a test email to confirm everything works.', 'zevsend-smtp' ); ?>
-						</li>
+							<li class="zevsend-smtp-step <?php echo $step['done'] ? 'is-done' : ''; ?>">
+								<span class="zevsend-smtp-step-icon">
+									<?php if ( $step['done'] ) : ?>
+										<span class="dashicons dashicons-yes"></span>
+									<?php else : ?>
+										<?php echo esc_html( (string) $step['num'] ); ?>
+									<?php endif; ?>
+								</span>
+								<div class="zevsend-smtp-step-body">
+									<span class="zevsend-smtp-step-title"><?php echo esc_html( $step['title'] ); ?></span>
+									<span class="zevsend-smtp-step-desc"><?php echo esc_html( $step['desc'] ); ?></span>
+								</div>
+								<?php if ( ! $step['done'] ) : ?>
+									<a
+										class="button button-secondary zevsend-smtp-step-action"
+										href="<?php echo esc_url( $step['url'] ); ?>"
+										<?php echo $step['blank'] ? 'target="_blank" rel="noopener"' : ''; ?>
+									>
+										<?php echo esc_html( $step['action'] ); ?>
+									</a>
+								<?php endif; ?>
+							</li>
+						<?php endforeach; ?>
 					</ol>
 				</div>
 			<?php endif; ?>
