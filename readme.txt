@@ -8,7 +8,7 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-The official ZevSend plugin. Connect WordPress to your ZevSend account for reliable email delivery, including WooCommerce and any plugin that uses wp_mail().
+The official ZevSend plugin. Reliable email delivery for WordPress, WooCommerce, and any plugin that uses wp_mail().
 
 == Description ==
 
