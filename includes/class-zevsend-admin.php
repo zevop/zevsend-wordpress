@@ -40,9 +40,22 @@ class ZevSend_SMTP_Admin {
 	}
 
 	/**
+	 * Screens the setup nudge is allowed to appear on.
+	 *
+	 * WordPress Guideline 11 forbids plugins from hijacking the whole
+	 * dashboard with notices. We show the nudge ONLY where it is
+	 * expected and actionable: the Plugins list (where you land right
+	 * after activating) and the Dashboard home. Never on every screen,
+	 * and never to a user who lacks the capability to act on it.
+	 *
+	 * @var string[]
+	 */
+	private static $notice_screens = array( 'plugins', 'dashboard' );
+
+	/**
 	 * Post-activation nudge, shown until the admin either finishes setup
-	 * (a valid key is configured) or dismisses it. Only to users who can
-	 * manage options, and never on our own settings screen.
+	 * (a valid key is configured) or dismisses it. Scoped by capability
+	 * AND screen per Guideline 11.
 	 *
 	 * @return void
 	 */
@@ -57,7 +70,7 @@ class ZevSend_SMTP_Admin {
 			return;
 		}
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		if ( $screen && 'settings_page_' . self::PAGE_SLUG === $screen->id ) {
+		if ( ! $screen || ! in_array( $screen->id, self::$notice_screens, true ) ) {
 			return;
 		}
 

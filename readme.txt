@@ -1,5 +1,5 @@
 === ZevSend SMTP ===
-Contributors: arowolodaniel
+Contributors: arowolodaniel, zevop
 Tags: smtp, email, transactional email, deliverability, woocommerce
 Requires at least: 5.7
 Tested up to: 7.0
@@ -8,11 +8,13 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Deliver all WordPress email through ZevSend for reliable inbox placement. Works with WooCommerce, contact forms, and any plugin that uses wp_mail().
+The official ZevSend plugin. Connect WordPress to your ZevSend account for reliable email delivery, including WooCommerce and any plugin that uses wp_mail().
 
 == Description ==
 
-ZevSend SMTP routes every email your WordPress site sends through the ZevSend email delivery API instead of the default server mailer, which is often unreliable and lands in spam.
+This is the official integration for ZevSend (https://zevsend.com), a transactional messaging service for email, SMS, WhatsApp, and verification codes. The plugin connects your WordPress site to your own ZevSend account and routes every email your site sends through the ZevSend email delivery API, instead of the default server mailer that is often unreliable and lands in spam. A ZevSend account and API key are required.
+
+Unlike a generic SMTP tool, it is purpose-built for the ZevSend API: it uses your verified sending domains and approved brand name, detects sandbox versus live from your key, respects ZevSend's per-message limits, and surfaces ZevSend's own delivery errors in plain language. If you send with ZevSend, this is the supported way to wire it into WordPress.
 
 Because it hooks WordPress at the wp_mail() layer, it works with everything automatically: WooCommerce order and shipping emails, password resets, new-user notifications, comment replies, and any contact form, membership, or newsletter plugin that sends mail the standard way. There is nothing to change in your theme or other plugins.
 
@@ -89,7 +91,8 @@ By default the send is reported as failed and, if enabled, logged. You can optio
 
 == Screenshots ==
 
-1. The ZevSend SMTP settings screen with connection status and test email.
+1. Guided setup on the ZevSend SMTP settings screen, with connection status, progress, and the API key field.
+2. Sender identity, delivery and logging options, and the built-in test email button.
 
 == Changelog ==
 

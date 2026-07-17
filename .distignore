@@ -1,0 +1,19 @@
+# Files here are EXCLUDED from what gets pushed to the WordPress.org
+# SVN trunk (like .gitignore, but for the plugin distribution). The
+# 10up deploy action reads this. Keep only runtime plugin files in
+# trunk: the main PHP file, readme.txt, includes/, languages/, and
+# the plugin's own assets/ (css/js/images).
+/.git
+/.github
+/.wordpress-org
+/.distignore
+/.gitignore
+/.editorconfig
+/README.md
+/*.zip
+/node_modules
+/vendor
+.DS_Store
+Thumbs.db
+*.log
+/dist

@@ -46,13 +46,9 @@ final class ZevSend_SMTP_Plugin {
 		// fire it. The schedule itself is created on activation.
 		add_action( ZevSend_SMTP_Logger::CRON_HOOK, array( 'ZevSend_SMTP_Logger', 'purge' ) );
 
-		// Load translations.
-		add_action(
-			'init',
-			static function () {
-				load_plugin_textdomain( 'zevsend-smtp', false, dirname( ZEVSEND_SMTP_BASENAME ) . '/languages' );
-			}
-		);
+		// Translations: WordPress.org auto-loads them for hosted plugins
+		// since WP 4.6, and we require 5.7+, so no load_plugin_textdomain()
+		// call is needed.
 	}
 
 	/**

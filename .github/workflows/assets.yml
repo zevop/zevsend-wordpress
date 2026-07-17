@@ -1,0 +1,33 @@
+name: Update wp.org readme & assets
+
+# Syncs readme.txt + .wordpress-org/ (icon, banner, screenshots) to
+# the wp.org SVN WITHOUT cutting a new plugin version. Use this for
+# metadata-only changes: Contributors, "Tested up to", description,
+# swapping screenshots. A full code release still goes through
+# deploy.yml (tag push). Runs only when those files actually change.
+#
+# Same secrets as deploy.yml: SVN_USERNAME + SVN_PASSWORD.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'readme.txt'
+      - '.wordpress-org/**'
+
+jobs:
+  assets:
+    name: Sync readme & assets to wp.org
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update readme & assets
+        uses: 10up/action-wordpress-plugin-asset-update@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: zevsend-smtp
+          ASSETS_DIR: .wordpress-org

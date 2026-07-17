@@ -1,0 +1,34 @@
+name: Deploy to WordPress.org
+
+# Publishes the plugin to the wp.org SVN repo whenever a semver tag is
+# pushed (e.g. `git tag 1.0.0 && git push origin 1.0.0`). No local svn
+# needed. The action:
+#   - copies the repo (minus .distignore matches) into SVN trunk
+#   - copies trunk into tags/<version> using the pushed tag
+#   - copies .wordpress-org/ into the SVN assets/ (icon, banner, screenshots)
+# The tag MUST match "Stable tag" in readme.txt or the action fails.
+#
+# One-time setup: add repo secrets SVN_USERNAME (arowolodaniel) and
+# SVN_PASSWORD (the wp.org SVN password, set at profile → Account &
+# Security — NOT the login password).
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  deploy:
+    name: Publish to wp.org
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: WordPress.org plugin deploy
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: zevsend-smtp
+          ASSETS_DIR: .wordpress-org
